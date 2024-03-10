@@ -1,51 +1,43 @@
-var postsUrl='https://jsonplaceholder.typicode.com/posts';
-var postsCommentUrl='https://jsonplaceholder.typicode.com/comments';
+const postsUrl = 'https://jsonplaceholder.typicode.com/posts';
+const commentsUrl = 'https://jsonplaceholder.typicode.com/comments';
 
-  
- var postsData=[];
- var postsCommentData=[];
+let postsData = [];
+let commentsData = [];
 
-//comments
- fetch(postsCommentUrl)
-  .then(response => response.json())
-  .then(data => {
-    postsCommentData.push(data);
-  })
-  .catch(error => console.error('Error:', error));
+async function fetchData(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return await response.json();
+}
 
-//posts
-  fetch(postsUrl)
-  .then(response => response.json())
-  .then(data => {
-      const tableData = document.getElementById('posts');
+async function fetchDataAndUpdateTable() {
+  try {
+    [postsData, commentsData] = await Promise.all([fetchData(postsUrl), fetchData(commentsUrl)]);
 
-      data.forEach((data,index) => {
-          const row = document.createElement('tr');
-          const body = data.body.length > 30 ? data.body.substring(0, 30) + '...' : data.body;
-          const comment = postsCommentData[0][index]; 
-          
-          const commentsData = postsCommentData[0];
-          let comments = [];
+    const tableData = document.getElementById('posts');
 
-          commentsData.forEach(comment => {
-    if (comment.postId === data.id && comments.length < 3) {
-        comments.push(comment);
-    }
-});
-          console.log(comments);
+    postsData.forEach(post => {
+      const row = document.createElement('tr');
+      const body = post.body.length > 30 ? post.body.substring(0, 30) + '...' : post.body;
 
-          row.innerHTML = `
-          <td>${data.id}</td>
-          <td>${data.title}</td>
+      const postComments = commentsData.filter(comment => comment.postId === post.id).slice(0, 3);
+
+      const commentsList = postComments.map(comment => `<li>${comment.body}</li>`).join('');
+
+      row.innerHTML = `
+          <td>${post.id}</td>
+          <td>${post.title}</td>
           <td>${body}</td>
-          <td>${comments.map(comment => comment.body).join('<br><br>')}</td>
+          <td><ul>${commentsList}</ul></td>
       `;
-          tableData.appendChild(row);
-      });
 
-  })
-  .catch(error => console.error('Error:', error));
+      tableData.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Hata:', error);
+  }
+}
 
-
-
-
+fetchDataAndUpdateTable();
